@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.seowon.apitest.mapper.UserMapper">
+    <select id="selectAllUsers" resultType="com.seowon.apitest.model.UserDto">
+        SELECT id, password, name, email
+        FROM acms_user
+    </select>
+
+    <select id="selectUserById" parameterType="String" resultType="com.seowon.apitest.model.UserDto">
+        SELECT id, password, name, email
+        FROM acms_user
+        WHERE id = #{userId}
+    </select>
+
+    <insert id="insertUser" parameterType="com.seowon.apitest.model.UserDto">
+        INSERT INTO acms_user (id, password, name, email)
+        VALUES (#{id}, #{password}, #{name}, #{email})
+    </insert>
+
+    <update id="updateUser" parameterType="com.seowon.apitest.model.UserDto">
+        UPDATE acms_user
+        SET password = #{password},
+            name     = #{name},
+            email    = #{email}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteUser" parameterType="String">
+        DELETE
+        FROM acms_user
+        WHERE id = #{userId}
+    </delete>
+</mapper>

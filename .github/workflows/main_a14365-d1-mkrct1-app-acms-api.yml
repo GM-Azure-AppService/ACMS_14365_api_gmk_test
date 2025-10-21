@@ -1,0 +1,95 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy JAR app to Azure Web App - a14365-d1-mkrct1-app-acms-api
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable (Linux runners)
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle (Boot JAR)
+        run: ./gradlew clean bootJar --no-daemon
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/*.jar    
+
+  deploy:
+    runs-on: ["GM-DBT-DEV-Ubuntu-Latest-64"]
+    environment: 'a14365-acms-test'
+    needs: build   
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+  
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+
+      - name: Retrieve Dynamic Secret
+        id: retrieve-secrets
+        uses: GM-InnerSource/ccoe-205219-az-dynamic-vault-creds-action@v1.0.1
+        with:
+          vault_auth_path: ${{ env.VAULT_PATH }}
+          vault_role: ${{ env.VAULT_ROLE }}
+          vault_address: ${{ env.VAULT_ADDR }}
+          vault_namespace: ${{ env.VAULT_NAMESPACE }}
+        env:
+          VAULT_ADDR: ${{ vars.VAULT_ADDR }}
+          VAULT_ROLE: ${{ vars.APP_DEPLOYERS_ROLE }}
+          VAULT_NAMESPACE: ${{ vars.VAULT_NAMESPACE }}
+          VAULT_PATH: ${{ vars.VAULT_JWT_GHA_BACKEND_PATH }}
+
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: '{"clientSecret": "${{ env.client_secret }}","subscriptionId": "${{ vars.SUBSCRIPTION_ID }}","tenantId": "${{ vars.TENANT_ID }}","clientId": "${{ env.client_id }}"}'
+                              
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'a14365-d1-mkrct1-app-acms-api'
+          slot-name: 'Production'
+          package: '*.jar'
+
+          
+
+
+
+
+
+
+
+
+
+
